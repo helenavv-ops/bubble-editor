@@ -25,3 +25,14 @@
   <script src="./editor.js"></script>
 </body>
 </html>
+<input type="file" id="imgUpload" accept="image/*" style="display:none" />
+<button onclick="document.getElementById('imgUpload').click()">Upload Image</button>
+<div id="leftSidebar">
+  <button onclick="applyGrain()">Grain</button>
+  <button onclick="applyLofi()">Lo-fi</button>
+  <button onclick="applyVintage()">Vintage</button>
+</div>
+
+<div id="topBar">
+  <button onclick="exportImage()">Export</button>
+</div>

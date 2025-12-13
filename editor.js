@@ -59,3 +59,26 @@ async function exportImage() {
   alert("Saved to your Workspace!");
 }
 ßß
+document.getElementById('imgUpload').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function(ev) {
+        fabric.Image.fromURL(ev.target.result, function(img) {
+            img.scaleToWidth(canvas.width);
+            canvas.clear();
+            canvas.add(img);
+            canvas.renderAll();
+        });
+    };
+
+    reader.readAsDataURL(file);
+});
+function exportImage() {
+    const dataURL = canvas.toDataURL({ format: "png" });
+
+    const a = document.createElement('a');
+    a.href = dataURL;
+    a.download = "edited-image.png";
+    a.click();
+}

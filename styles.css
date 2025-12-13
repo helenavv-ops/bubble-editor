@@ -28,3 +28,20 @@ button {
   cursor: pointer;
 }
 ßß
+#leftSidebar {
+  position: absolute;
+  left: 10px;
+  top: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#topBar {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+}
