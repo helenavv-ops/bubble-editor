@@ -110,3 +110,11 @@ function exportImage() {
   link.download = "edited-image.png";
   link.click();
 }
+
+window.addEventListener("message", (event) => {
+  console.log("Message received in iframe:", event.data);
+
+  if (event.data.type === "LOAD_IMAGE") {
+    loadImage(event.data.url);
+  }
+});
