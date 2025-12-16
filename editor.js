@@ -28,8 +28,13 @@ console.log("Raw image param:", imageUrl);
 console.log("Canvas ID:", canvasId);
 
 // -----------------------------
-// 2. Normalize Bubble / Imgix URLs
+// Phase 2: Bubble API config (MVP)
 // -----------------------------
+// IMPORTANT: For MVP only. Do NOT keep secrets in frontend long-term.
+const BUBBLE_APP_BASE = "https://chrometica.bubbleapps.io"; // <-- replace
+const BUBBLE_DATA_API_VERSION = "1.1";
+const BUBBLE_API_TOKEN = "Bearer YOUR_API_TOKEN_HERE";   // <-- replace
+
 if (imageUrl && imageUrl.startsWith("//")) {
   imageUrl = "https:" + imageUrl;
 }
@@ -68,6 +73,37 @@ function loadCanvasFromSerialized(serialized) {
     }
   });
 }
+async function saveCanvasJsonToBubble(jsonString) {
+  if (!canvasId) {
+    console.warn("Autosave skipped: no canvasId provided in URL (?id=...)");
+    return;
+  }
+
+  const url = `${BUBBLE_APP_BASE}/api/${BUBBLE_DATA_API_VERSION}/obj/canvas/${canvasId}`;
+
+  try {
+    const res = await fetch(url, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": BUBBLE_API_TOKEN
+      },
+      body: JSON.stringify({
+        editor_json: jsonString
+      })
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Autosave failed:", res.status, text);
+      return;
+    }
+
+    console.log("Autosaved to Bubble ✅");
+  } catch (err) {
+    console.error("Autosave error:", err);
+  }
+}
 
 function pushHistoryState() {
   const serialized = serializeCanvas();
@@ -97,6 +133,8 @@ function pushHistoryState() {
   }
 
   console.log(`History saved. index=${historyIndex}, total=${history.length}`);
+  scheduleAutosave();
+
 }
 
 function scheduleSaveState() {
@@ -107,6 +145,53 @@ function scheduleSaveState() {
   saveTimeout = setTimeout(() => {
     pushHistoryState();
   }, SAVE_DEBOUNCE_MS);
+}
+
+let autosaveTimeout = null;
+const AUTOSAVE_DEBOUNCE_MS = 1500; // 1.5s after user stops editing
+
+function scheduleAutosave() {
+  if (isInitialLoad || isRestoringHistory) return;
+
+  if (autosaveTimeout) clearTimeout(autosaveTimeout);
+
+  autosaveTimeout = setTimeout(() => {
+    const jsonString = serializeCanvas();
+    saveCanvasJsonToBubble(jsonString);
+  }, AUTOSAVE_DEBOUNCE_MS);
+}
+
+async function fetchCanvasJsonFromBubble() {
+  if (!canvasId) return null;
+
+  const url = `${BUBBLE_APP_BASE}/api/${BUBBLE_DATA_API_VERSION}/obj/canvas/${canvasId}`;
+
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Authorization": BUBBLE_API_TOKEN
+      }
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Fetch canvas failed:", res.status, text);
+      return null;
+    }
+
+    const data = await res.json();
+
+    // Bubble Data API returns object fields in "response"
+    // Depending on your API settings it may return:
+    // data.response.editor_json OR data.response.editor_json (common)
+    const editorJson = data?.response?.editor_json || null;
+
+    return editorJson;
+  } catch (err) {
+    console.error("Fetch canvas error:", err);
+    return null;
+  }
 }
 
 // Save state when canvas changes
@@ -164,59 +249,82 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-
-
 // -----------------------------
-// 4. Load image (if provided)
+// 4. Load saved JSON OR load image
 // -----------------------------
-if (imageUrl) {
-  fabric.Image.fromURL(
-    imageUrl,
-    (img) => {
-      baseImageObject = img; // 👈 ADD THIS LINE FIRST
+(async function init() {
+  // 1) Try to load saved canvas JSON from Bubble
+  const savedJson = await fetchCanvasJsonFromBubble();
 
-      // Scale image to fit canvas
-      const canvasWidth = canvas.getWidth();
-      const canvasHeight = canvas.getHeight();
+  if (savedJson) {
+    console.log("Found saved editor_json — loading canvas from JSON...");
 
-      const scale = Math.min(
-        canvasWidth / img.width,
-        canvasHeight / img.height
-      );
+    isRestoringHistory = true;
+   await loadCanvasFromSerialized(savedJson);
 
-      img.set({
-        left: canvasWidth / 2,
-        top: canvasHeight / 2,
-        originX: "center",
-        originY: "center",
-        scaleX: scale,
-        scaleY: scale,
-        selectable: true
-      });
+// Restore base image reference
+baseImageObject = canvas.getObjects().find(obj => obj.type === "image") || null;
 
-      canvas.add(img);
-      canvas.setActiveObject(img);
-      canvas.renderAll();
-      
-// Initial load complete → allow history saves
-isInitialLoad = false;
+isRestoringHistory = false;
 
-// Save first history state so undo works
-pushHistoryState();
-      console.log("Image loaded into Fabric canvas");
-    },
-    {
-      crossOrigin: "anonymous" // IMPORTANT for Bubble/Imgix
-    }
-  );
-} else {
-  // Blank canvas case
-  isInitialLoad = false;
-  pushHistoryState();
-  console.warn("No image URL provided — starting with blank canvas");
-}
+    // Initial load complete
+    isInitialLoad = false;
 
-// -----------------------------
-// 5. Editor ready signal
-// -----------------------------
-console.log("Editor loaded and running");
+    // Save first history state (so undo starts clean)
+    pushHistoryState();
+
+    console.log("Canvas restored from saved JSON ✅");
+    console.log("Editor loaded and running");
+    return;
+  }
+
+  // 2) No JSON saved yet → fallback to loading the initial image
+  console.log("No saved JSON found — loading from image param...");
+
+  if (imageUrl) {
+    fabric.Image.fromURL(
+      imageUrl,
+      (img) => {
+        baseImageObject = img;
+
+        const canvasWidth = canvas.getWidth();
+        const canvasHeight = canvas.getHeight();
+
+        const scale = Math.min(
+          canvasWidth / img.width,
+          canvasHeight / img.height
+        );
+
+        img.set({
+          left: canvasWidth / 2,
+          top: canvasHeight / 2,
+          originX: "center",
+          originY: "center",
+          scaleX: scale,
+          scaleY: scale,
+          selectable: true
+        });
+
+        canvas.add(img);
+        canvas.setActiveObject(img);
+        canvas.renderAll();
+
+        // Initial load complete
+        isInitialLoad = false;
+
+        // Save first history state
+        pushHistoryState();
+
+        console.log("Image loaded into Fabric canvas");
+        console.log("Editor loaded and running");
+      },
+      { crossOrigin: "anonymous" }
+    );
+  } else {
+    // Blank canvas
+    isInitialLoad = false;
+    pushHistoryState();
+    console.warn("No image URL provided — starting with blank canvas");
+    console.log("Editor loaded and running");
+  }
+})();
