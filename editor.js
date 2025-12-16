@@ -32,56 +32,72 @@ window.addEventListener("message", (event) => {
       handleFilter(msg.name, msg.value);
       break;
 
-   case "EXPORT_IMAGE":
-  exportImage();
-  break;
+    case "LOAD_IMAGE":
+      loadImage(msg.url);
+      break;
 
+    case "EXPORT_IMAGE":
+      exportImage();
+      break;
+
+    default:
+      console.warn("Unknown message type:", msg.type);
+  }
+});
+
+/* -----------------------------------
+   3. Image Loader
+----------------------------------- */
 function loadImage(url) {
-  // Safety check: if canvas isn't ready yet, do nothing
   if (!canvas) {
     console.warn("Canvas not initialized yet");
     return;
   }
 
-  // Load image from URL using Fabric.js
+  console.log("Loading image:", url);
+
   fabric.Image.fromURL(
     url,
-
-    // Callback runs AFTER the image is fully loaded
     (img) => {
-
-      // Clear anything currently on the canvas
-      // (this keeps it single-image for now)
       canvas.clear();
 
-      // Get canvas dimensions
       const canvasWidth = canvas.getWidth();
       const canvasHeight = canvas.getHeight();
 
-      // Calculate scale so image fits inside canvas
-      // without stretching or cropping
       const scale = Math.min(
         canvasWidth / img.width,
         canvasHeight / img.height
       );
 
-      // Apply positioning + scaling to the image
       img.set({
-        originX: "center",          // center horizontally
-        originY: "center",          // center vertically
-        left: canvasWidth / 2,      // move to center X
-        top: canvasHeight / 2,      // move to center Y
-        scaleX: scale,              // scale proportionally
+        originX: "center",
+        originY: "center",
+        left: canvasWidth / 2,
+        top: canvasHeight / 2,
+        scaleX: scale,
         scaleY: scale,
-        selectable: false           // user cannot drag/select
+        selectable: false
       });
 
-      // Add image to canvas
       canvas.add(img);
-
-      // Force redraw
       canvas.renderAll();
     },
+    { crossOrigin: "anonymous" }
+  );
+}
 
-    // Required so images from Bubble / S3 / CDN load correctly
-    { crossO
+/* -----------------------------------
+   4. Filter Handler (stub for now)
+----------------------------------- */
+function handleFilter(name, value) {
+  console.log("Filter:", name, value);
+  canvas.renderAll();
+}
+
+/* -----------------------------------
+   5. Export Image
+----------------------------------- */
+function exportImage() {
+  if (!canvas) return;
+
+  const dataUR
