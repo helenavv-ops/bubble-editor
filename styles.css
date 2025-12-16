@@ -1,47 +1,25 @@
-body {
+/* Reset */
+html, body {
   margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
   background: #0d0d0d;
   font-family: sans-serif;
-  color: white;
 }
 
+/* Canvas wrapper */
 #editor-container {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
+  background: #0d0d0d;
 }
 
-#toolbar {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  display: flex;
-  gap: 12px;
-}
-
-button {
-  padding: 8px 16px;
-  background: #1a1a1a;
-  color: white;
-  border: 1px solid #333;
-  border-radius: 8px;
-  cursor: pointer;
-}
-ßß
-#leftSidebar {
-  position: absolute;
-  left: 10px;
-  top: 80px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-#topBar {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 12px;
+/* Fabric.js canvas */
+#editor-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #2E2E2E; /* YOUR desired canvas color */
 }
