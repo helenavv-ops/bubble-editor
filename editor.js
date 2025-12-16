@@ -31,7 +31,7 @@ console.log("Canvas ID:", canvasId);
 // Phase 2: Bubble API config (MVP)
 // -----------------------------
 // IMPORTANT: For MVP only. Do NOT keep secrets in frontend long-term.
-const BUBBLE_APP_BASE = "https://chrometica.bubbleapps.io"; // <-- replace
+const BUBBLE_APP_BASE = "https://chrometica.bubbleapps.io/version-test"; // <-- replace
 const BUBBLE_DATA_API_VERSION = "1.1";
 const BUBBLE_API_TOKEN = "Bearer YOUR_API_TOKEN_HERE";   // <-- replace
 
