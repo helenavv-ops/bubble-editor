@@ -100,4 +100,13 @@ function handleFilter(name, value) {
 function exportImage() {
   if (!canvas) return;
 
-  const dataUR
+  const dataURL = canvas.toDataURL({
+    format: "png",
+    quality: 1
+  });
+
+  const link = document.createElement("a");
+  link.href = dataURL;
+  link.download = "edited-image.png";
+  link.click();
+}
