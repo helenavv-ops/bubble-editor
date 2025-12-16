@@ -18,6 +18,11 @@ let saveTimeout = null;
 const SAVE_DEBOUNCE_MS = 250;
 
 // -----------------------------
+// Phase 3: Tool state
+// -----------------------------
+let activeTool = "select"; // select | draw | text | crop
+
+// -----------------------------
 // Read query parameters
 // -----------------------------
 const params = new URLSearchParams(window.location.search);
@@ -50,6 +55,126 @@ const canvas = new fabric.Canvas("editor-canvas", {
 });
 
 console.log("Fabric canvas initialized");
+
+// -----------------------------
+// Phase 3: Editor command API
+// -----------------------------
+window.EditorAPI = {
+  setTool(tool) {
+    activeTool = tool;
+
+    canvas.isDrawingMode = false;
+    canvas.selection = true;
+    canvas.forEachObject(obj => obj.selectable = true);
+
+    if (tool === "draw") {
+      canvas.isDrawingMode = true;
+    }
+
+    console.log("Tool set to:", tool);
+  },
+
+  setBrushSize(size) {
+    if (canvas.freeDrawingBrush) {
+      canvas.freeDrawingBrush.width = Number(size);
+      console.log("Brush size set to:", size);
+    }
+  },
+
+  addText() {
+    const text = new fabric.IText("Type here", {
+      left: canvas.getWidth() / 2,
+      top: canvas.getHeight() / 2,
+      originX: "center",
+      originY: "center",
+      fontSize: 40,
+      fill: "#ffffff"
+    });
+
+    canvas.add(text);
+    canvas.setActiveObject(text);
+    canvas.renderAll();
+    console.log("Text added");
+  },
+
+  applyFilters(filters) {
+    if (!baseImageObject) {
+      console.warn("No base image for filters");
+      return;
+    }
+
+    baseImageObject.filters = [];
+
+    if (filters.brightness !== 0) {
+      baseImageObject.filters.push(
+        new fabric.Image.filters.Brightness({ brightness: filters.brightness })
+      );
+    }
+
+    if (filters.contrast !== 0) {
+      baseImageObject.filters.push(
+        new fabric.Image.filters.Contrast({ contrast: filters.contrast })
+      );
+    }
+
+    if (filters.saturation !== 0) {
+      baseImageObject.filters.push(
+        new fabric.Image.filters.Saturation({ saturation: filters.saturation })
+      );
+    }
+
+    baseImageObject.applyFilters();
+    canvas.requestRenderAll();
+    console.log("Filters applied:", filters);
+  },
+
+  exportPNG() {
+    const dataURL = canvas.toDataURL({
+      format: "png",
+      quality: 1
+    });
+
+    window.parent.postMessage(
+      { type: "EXPORT_IMAGE", dataURL },
+      "*"
+    );
+  }
+};
+
+// -----------------------------
+// Phase 3: Listen for Bubble commands
+// -----------------------------
+window.addEventListener("message", (event) => {
+  const { type, payload } = event.data || {};
+
+  if (!type) return;
+
+  switch (type) {
+    case "SET_TOOL":
+      window.EditorAPI.setTool(payload);
+      break;
+
+    case "SET_BRUSH_SIZE":
+      window.EditorAPI.setBrushSize(payload);
+      break;
+
+    case "ADD_TEXT":
+      window.EditorAPI.addText();
+      break;
+
+    case "APPLY_FILTERS":
+      window.EditorAPI.applyFilters(payload);
+      break;
+
+    case "EXPORT_PNG":
+      window.EditorAPI.exportPNG();
+      break;
+
+    default:
+      console.warn("Unknown editor command:", type);
+  }
+});
+
 
 // -----------------------------
 // Phase 1: Serialize / Load helpers
