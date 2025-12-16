@@ -6,51 +6,40 @@ let canvas;
    1. Initialize Fabric Canvas
 ----------------------------------- */
 window.addEventListener("DOMContentLoaded", () => {
+  const container = document.getElementById("editor-container");
+
   canvas = new fabric.Canvas("editor-canvas", {
     preserveObjectStacking: true,
     selection: false
   });
 
-  const container = document.getElementById("editor-container");
-
   canvas.setWidth(container.clientWidth);
   canvas.setHeight(container.clientHeight);
+
   canvas.setBackgroundColor("#2E2E2E", canvas.renderAll.bind(canvas));
 
   console.log("Fabric canvas initialized");
 });
 
 /* -----------------------------------
-   2. Message Router (from Bubble)
+   2. Receive messages from Bubble
 ----------------------------------- */
 window.addEventListener("message", (event) => {
-  const msg = event.data;
-  if (!msg || !msg.type) return;
+  console.log("🟢 IFRAME RECEIVED MESSAGE:", event.data);
 
-  switch (msg.type) {
-    case "FILTER_SET":
-      handleFilter(msg.name, msg.value);
-      break;
+  if (!event.data || !event.data.type) return;
 
-    case "LOAD_IMAGE":
-      loadImage(msg.url);
-      break;
-
-    case "EXPORT_IMAGE":
-      exportImage();
-      break;
-
-    default:
-      console.warn("Unknown message type:", msg.type);
+  if (event.data.type === "LOAD_IMAGE") {
+    loadImage(event.data.url);
   }
 });
 
 /* -----------------------------------
-   3. Image Loader
+   3. Load image into Fabric
 ----------------------------------- */
 function loadImage(url) {
   if (!canvas) {
-    console.warn("Canvas not initialized yet");
+    console.warn("Canvas not ready yet");
     return;
   }
 
@@ -61,19 +50,16 @@ function loadImage(url) {
     (img) => {
       canvas.clear();
 
-      const canvasWidth = canvas.getWidth();
-      const canvasHeight = canvas.getHeight();
+      const cw = canvas.getWidth();
+      const ch = canvas.getHeight();
 
-      const scale = Math.min(
-        canvasWidth / img.width,
-        canvasHeight / img.height
-      );
+      const scale = Math.min(cw / img.width, ch / img.height);
 
       img.set({
         originX: "center",
         originY: "center",
-        left: canvasWidth / 2,
-        top: canvasHeight / 2,
+        left: cw / 2,
+        top: ch / 2,
         scaleX: scale,
         scaleY: scale,
         selectable: false
@@ -81,40 +67,11 @@ function loadImage(url) {
 
       canvas.add(img);
       canvas.renderAll();
+
+      console.log("✅ Image rendered on canvas");
     },
-    { crossOrigin: "anonymous" }
+    {
+      crossOrigin: "anonymous"
+    }
   );
 }
-
-/* -----------------------------------
-   4. Filter Handler (stub for now)
------------------------------------ */
-function handleFilter(name, value) {
-  console.log("Filter:", name, value);
-  canvas.renderAll();
-}
-
-/* -----------------------------------
-   5. Export Image
------------------------------------ */
-function exportImage() {
-  if (!canvas) return;
-
-  const dataURL = canvas.toDataURL({
-    format: "png",
-    quality: 1
-  });
-
-  const link = document.createElement("a");
-  link.href = dataURL;
-  link.download = "edited-image.png";
-  link.click();
-}
-
-window.addEventListener("message", (event) => {
-  console.log("Message received in iframe:", event.data);
-
-  if (event.data.type === "LOAD_IMAGE") {
-    loadImage(event.data.url);
-  }
-});
