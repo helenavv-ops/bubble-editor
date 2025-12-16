@@ -4,17 +4,71 @@
   <meta charset="UTF-8" />
   <title>Studio Editor</title>
 
-  <link rel="stylesheet" href="./styles.css" />
+  <!-- Prevent caching while debugging -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
+  <!-- Responsive sizing -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- Fabric.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+
+  <style>
+    /* Reset */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #111;
+      overflow: hidden;
+    }
+
+    /* Editor container */
+    #editor-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Canvas wrapper (allows scaling later) */
+    #canvas-container {
+      position: relative;
+      width: 1330px;
+      height: 800px;
+      background: #1a1a1a;
+    }
+
+    /* Fabric canvas */
+    canvas {
+      display: block;
+      background: transparent;
+    }
+  </style>
 </head>
 
 <body>
+
   <div id="editor-container">
-    <canvas id="editor-canvas"></canvas>
+    <div id="canvas-container">
+      <canvas
+        id="editor-canvas"
+        width="2660"
+        height="1600">
+      </canvas>
+    </div>
   </div>
 
+  <!-- Editor logic -->
   <script src="./editor.js"></script>
+
 </body>
 </html>
