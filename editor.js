@@ -1,77 +1,78 @@
-console.log("Editor loaded and running");
+/*************************************************
+ * Editor.js
+ * Bubble → Fabric editor bootstrap
+ *************************************************/
 
-let canvas;
+// -----------------------------
+// 1. Read query parameters
+// -----------------------------
+const params = new URLSearchParams(window.location.search);
+let imageUrl = params.get("image");
+const canvasId = params.get("id"); // optional, future use
 
-/* -----------------------------------
-   1. Initialize Fabric Canvas
------------------------------------ */
-window.addEventListener("DOMContentLoaded", () => {
-  const container = document.getElementById("editor-container");
+console.log("Raw image param:", imageUrl);
+console.log("Canvas ID:", canvasId);
 
-  canvas = new fabric.Canvas("editor-canvas", {
-    preserveObjectStacking: true,
-    selection: false
-  });
+// -----------------------------
+// 2. Normalize Bubble / Imgix URLs
+// -----------------------------
+if (imageUrl && imageUrl.startsWith("//")) {
+  imageUrl = "https:" + imageUrl;
+}
 
-  canvas.setWidth(container.clientWidth);
-  canvas.setHeight(container.clientHeight);
+console.log("Normalized image URL:", imageUrl);
 
-  canvas.setBackgroundColor("#2E2E2E", canvas.renderAll.bind(canvas));
-
-  console.log("Fabric canvas initialized");
+// -----------------------------
+// 3. Create Fabric canvas
+// -----------------------------
+const canvas = new fabric.Canvas("editor-canvas", {
+  preserveObjectStacking: true,
+  selection: true
 });
 
-/* -----------------------------------
-   2. Receive messages from Bubble
------------------------------------ */
-window.addEventListener("message", (event) => {
-  console.log("🟢 IFRAME RECEIVED MESSAGE:", event.data);
+console.log("Fabric canvas initialized");
 
-  if (!event.data || !event.data.type) return;
-
-  if (event.data.type === "LOAD_IMAGE") {
-    loadImage(event.data.url);
-  }
-});
-
-/* -----------------------------------
-   3. Load image into Fabric
------------------------------------ */
-function loadImage(url) {
-  if (!canvas) {
-    console.warn("Canvas not ready yet");
-    return;
-  }
-
-  console.log("Loading image:", url);
-
+// -----------------------------
+// 4. Load image (if provided)
+// -----------------------------
+if (imageUrl) {
   fabric.Image.fromURL(
-    url,
+    imageUrl,
     (img) => {
-      canvas.clear();
+      // Scale image to fit canvas
+      const canvasWidth = canvas.getWidth();
+      const canvasHeight = canvas.getHeight();
 
-      const cw = canvas.getWidth();
-      const ch = canvas.getHeight();
-
-      const scale = Math.min(cw / img.width, ch / img.height);
+      const scale = Math.min(
+        canvasWidth / img.width,
+        canvasHeight / img.height
+      );
 
       img.set({
+        left: canvasWidth / 2,
+        top: canvasHeight / 2,
         originX: "center",
         originY: "center",
-        left: cw / 2,
-        top: ch / 2,
         scaleX: scale,
         scaleY: scale,
-        selectable: false
+        selectable: true
       });
 
       canvas.add(img);
+      canvas.setActiveObject(img);
       canvas.renderAll();
 
-      console.log("✅ Image rendered on canvas");
+      console.log("Image loaded into Fabric canvas");
     },
     {
-      crossOrigin: "anonymous"
+      crossOrigin: "anonymous" // IMPORTANT for Bubble/Imgix
     }
   );
+} else {
+  console.warn("No image URL provided — starting with blank canvas");
 }
+
+// -----------------------------
+// 5. Editor ready signal
+// -----------------------------
+console.log("Editor loaded and running");
