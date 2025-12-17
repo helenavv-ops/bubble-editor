@@ -395,10 +395,19 @@ canvas.on("path:created", scheduleSaveState);
   fabric.Image.fromURL(
     imageUrl,
     (img) => {
-      const scale = Math.min(
-        canvas.getWidth() / img.width,
-        canvas.getHeight() / img.height
-      );
+      // Leave padding so the image never feels too big
+const PADDING = 120;
+
+// Visible workspace size
+const availableWidth = canvas.getWidth() - PADDING;
+const availableHeight = canvas.getHeight() - PADDING;
+
+// Scale image to FIT inside visible area
+const scale = Math.min(
+  availableWidth / img.width,
+  availableHeight / img.height,
+  1 // NEVER upscale smaller images
+);
 
       img.set({
         left: canvas.getWidth() / 2,
