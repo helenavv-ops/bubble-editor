@@ -136,6 +136,7 @@ function applyAdjustTool(tool, value) {
   const v = value / 100;
 
   switch (tool) {
+    // ---------------- BASIC ----------------
     case "brightness":
       img.filters[0] = new fabric.Image.filters.Brightness({ brightness: v });
       break;
@@ -149,6 +150,49 @@ function applyAdjustTool(tool, value) {
         img.filters[2] = new fabric.Image.filters.Saturation({ saturation: v });
       }
       break;
+
+    // ---------------- HIGHLIGHTS ----------------
+    case "highlights": {
+      // RIGHT → brighter highlights
+      // LEFT → highlight recovery
+      const brightness = 0.25 * v;
+      const contrast = 0.35 * v;
+
+      img.filters[3] = new fabric.Image.filters.Brightness({ brightness });
+      img.filters[4] = new fabric.Image.filters.Contrast({ contrast });
+      break;
+    }
+
+    // ---------------- SHADOWS ----------------
+    case "shadows": {
+      // RIGHT → lifted, faded shadows
+      // LEFT → deeper, richer shadows
+      const brightness = 0.35 * v;
+      const contrast = -0.25 * v;
+
+      img.filters[5] = new fabric.Image.filters.Brightness({ brightness });
+      img.filters[6] = new fabric.Image.filters.Contrast({ contrast });
+      break;
+    }
+
+    // ---------------- SHARPEN ----------------
+    case "sharpen": {
+      if (value <= 0) {
+        img.filters[7] = null;
+        break;
+      }
+
+      const intensity = value / 100;
+
+      img.filters[7] = new fabric.Image.filters.Convolute({
+        matrix: [
+          0, -1 * intensity, 0,
+          -1 * intensity, 1 + 4 * intensity, -1 * intensity,
+          0, -1 * intensity, 0
+        ]
+      });
+      break;
+    }
 
     default:
       console.warn("Unknown adjust tool:", tool);
