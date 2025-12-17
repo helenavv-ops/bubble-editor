@@ -76,6 +76,10 @@ function resizeCanvasToDisplaySize() {
 function fitImageToCanvas(img) {
   resizeCanvasToDisplaySize();
 
+  // 🔑 RESET any pan / zoom / transform
+  canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+  canvas.setZoom(1);
+
   const PADDING = 120;
 
   const availableWidth = canvas.getWidth() - (PADDING * 2);
