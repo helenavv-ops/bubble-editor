@@ -58,10 +58,10 @@ window.baseImageObject = null;
 console.log("Fabric canvas initialized");
 
 function resizeCanvasToDisplaySize() {
-  const el = document.getElementById("editor-canvas");
-  if (!el) return;
+  const container = document.getElementById("canvas-container");
+  if (!container) return;
 
-  const rect = el.getBoundingClientRect();
+  const rect = container.getBoundingClientRect();
   const width = Math.floor(rect.width);
   const height = Math.floor(rect.height);
 
@@ -69,7 +69,6 @@ function resizeCanvasToDisplaySize() {
     canvas.setWidth(width);
     canvas.setHeight(height);
     canvas.calcOffset();
-    canvas.requestRenderAll();
   }
 }
 
