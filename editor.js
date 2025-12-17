@@ -57,6 +57,61 @@ window.baseImageObject = null;
 
 console.log("Fabric canvas initialized");
 
+function resizeCanvasToDisplaySize() {
+  const el = document.getElementById("editor-canvas");
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+  const width = Math.floor(rect.width);
+  const height = Math.floor(rect.height);
+
+  if (width > 0 && height > 0) {
+    canvas.setWidth(width);
+    canvas.setHeight(height);
+    canvas.calcOffset();
+    canvas.requestRenderAll();
+  }
+}
+
+function fitImageToCanvas(img) {
+  resizeCanvasToDisplaySize();
+
+  const PADDING = 120;
+
+  const availableWidth = canvas.getWidth() - (PADDING * 2);
+  const availableHeight = canvas.getHeight() - (PADDING * 2);
+
+  const safeW = Math.max(10, availableWidth);
+  const safeH = Math.max(10, availableHeight);
+
+  const scale = Math.min(
+    safeW / img.width,
+    safeH / img.height,
+    1
+  );
+
+  const center = canvas.getCenter();
+
+  img.set({
+    originX: "center",
+    originY: "center",
+    left: center.left,
+    top: center.top,
+    scaleX: scale,
+    scaleY: scale
+  });
+
+  img.setCoords();
+}
+
+// Run once on load
+resizeCanvasToDisplaySize();
+
+// Keep it correct if the page/iframe resizes
+window.addEventListener("resize", resizeCanvasToDisplaySize);
+
+
+
 // =================================================
 // Editor API (non-slider commands)
 // =================================================
@@ -395,28 +450,8 @@ canvas.on("path:created", scheduleSaveState);
   fabric.Image.fromURL(
     imageUrl,
     (img) => {
-      // Leave padding so the image never feels too big
-const PADDING = 120;
-
-// Visible workspace size
-const availableWidth = canvas.getWidth() - PADDING;
-const availableHeight = canvas.getHeight() - PADDING;
-
-// Scale image to FIT inside visible area
-const scale = Math.min(
-  availableWidth / img.width,
-  availableHeight / img.height,
-  1 // NEVER upscale smaller images
-);
-
-      img.set({
-        left: canvas.getWidth() / 2,
-        top: canvas.getHeight() / 2,
-        originX: "center",
-        originY: "center",
-        scaleX: scale,
-        scaleY: scale
-      });
+      // Make sure Fabric size matches the visible canvas BEFORE we fit the image
+fitImageToCanvas(img);
 
       baseImageObject = img;
       window.baseImageObject = baseImageObject;
@@ -425,6 +460,14 @@ const scale = Math.min(
       canvas.setActiveObject(img);
       canvas.renderAll();
 
+canvas.calcOffset();
+
+setTimeout(() => {
+  fitImageToCanvas(img);
+  canvas.renderAll();
+  canvas.calcOffset();
+}, 60);
+      
       isInitialLoad = false;
       pushHistoryState();
     },
